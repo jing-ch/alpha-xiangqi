@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xiangqi Game Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Xiangqi Game Viewer</h1>
+        <div class="main-content">
+            <div class="board-section">
+                <div id="eval-bar-container">
+                    <div id="eval-bar">
+                        <div id="eval-fill"></div>
+                    </div>
+                    <div id="eval-text">0.0</div>
+                </div>
+                <div id="board-container">
+                    <img id="board" src="static/position_0.svg" alt="Xiangqi Board">
+                </div>
+            </div>
+            <div class="info-section">
+                <div id="info">Position: 0</div>
+                <div id="best-move"></div>
+                <div id="controls">
+                    <button onclick="firstMove()">⏮</button>
+                    <button id="prev-btn" onclick="prevMove()">◀</button>
+                    <button id="next-btn" onclick="nextMove()">▶</button>
+                    <button onclick="lastMove()">⏭</button>
+                </div>
+                <div id="moves"></div>
+                <div id="fen-display"></div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
