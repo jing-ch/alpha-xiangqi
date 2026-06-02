@@ -10,7 +10,7 @@ import time
 class Engine:
     def __init__(self):
         self.process = subprocess.Popen(
-            ['fairy-stockfish_x86-64.exe'], # Download your specific version and then change this
+            ['/opt/homebrew/bin/fairy-stockfish'], # Download your specific version and then change this
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
