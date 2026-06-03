@@ -39,7 +39,6 @@ def evaluate(fen, moves):
         score += value if ch.isupper() else -value
     return score
 
-# opening moves by the book
 def choose_opening_move(fen, moves):
     '''If the given position is in the opening book, return the book move.'''
     # Only consider the root position, before any moves.
@@ -54,19 +53,16 @@ def side_to_move(position_fen):
     return position_fen.split(" ")[1]
 
 
-def minimax(fen, moves, depth):
-    '''Minimax search. Returns (best_value, best_move) from Red's perspective.
+def minimax_ab(fen, moves, depth, alpha=-INF, beta=INF):
+    '''Minimax search with alpha-beta pruning.
 
-    Red maximizes the evaluation score; Black minimizes it. A side with no
-    legal moves is checkmated (a loss for that side) in xiangqi.
+    Returns (best_value, best_move) from Red's perspective.
     '''
     legal = sf.legal_moves("xiangqi", fen, moves)
 
-    # Terminal: someone has no moves -> they lose.
     if not legal:
         return (-MATE if side_to_move(fen) == 'w' else MATE), None
 
-    # Depth limit reached: score the position statically.
     if depth == 0:
         return evaluate(fen, moves), None
 
@@ -77,23 +73,29 @@ def minimax(fen, moves, depth):
         best_value = -INF
         for move in legal:
             child_fen = sf.get_fen("xiangqi", fen, moves + [move])
-            value, _ = minimax(child_fen, [], depth - 1)
+            value, _ = minimax_ab(child_fen, [], depth - 1, alpha, beta)
             if value > best_value:
                 best_value, best_move = value, move
+            alpha = max(alpha, best_value)
+            if beta <= alpha:
+                break  # beta cut-off
     else:
         best_value = INF
         for move in legal:
             child_fen = sf.get_fen("xiangqi", fen, moves + [move])
-            value, _ = minimax(child_fen, [], depth - 1)
+            value, _ = minimax_ab(child_fen, [], depth - 1, alpha, beta)
             if value < best_value:
                 best_value, best_move = value, move
+            beta = min(beta, best_value)
+            if beta <= alpha:
+                break  # alpha cut-off
 
     return best_value, best_move
 
 
 def choose_move(fen, moves):
     '''Picks the bot's move for the current position using minimax.'''
-    value, best = minimax(fen, moves, SEARCH_DEPTH)
+    value, best = minimax_ab(fen, moves, SEARCH_DEPTH)
     if best is None:                       # no legal moves
         return None
     return best
