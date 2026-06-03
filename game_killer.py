@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+
+"""Game Killer — a xiangqi (Chinese chess) engine using minimax search.
+
+Plays xiangqi over the UCI protocol. Move selection combines a small opening
+book with an iterative-deepening alpha-beta search, scored by a material-based
+evaluation function adapted from Shannon's 1950 chess paper. Designed to
+respond within a one-second-per-move time limit.
+
+Author: Jinghan Chen
+"""
+
 import random
 import sys
 import pyffish as sf
@@ -53,12 +64,12 @@ def side_to_move(position_fen):
     return position_fen.split(" ")[1]
 
 def order_moves(fen, moves):
-    '''Orders the given moves with captures first.'''
+    '''Orders legal moves with captures first (for better alpha-beta cutoffs).'''
     legal = sf.legal_moves("xiangqi", fen, moves)
     captures = []
     non_captures = []
     for move in legal:
-        if 'x' in move:
+        if sf.is_capture("xiangqi", fen, moves, move):
             captures.append(move)
         else:
             non_captures.append(move)
@@ -82,7 +93,7 @@ def minimax_ab(fen, moves, depth, alpha=-INF, beta=INF):
     best_move = None
 
     # Orders the given moves with captures first, to optimize pruning.
-    ordered_moves = order_moves(fen, legal)
+    ordered_moves = order_moves(fen, moves)
 
     if red_to_move:
         best_value = -INF
