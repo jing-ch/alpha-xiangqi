@@ -24,6 +24,10 @@ OPENING_BOOK = {
     "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C2C4/9/RNBAKABNR b": "h9g7",
 }
 
+INF = float('inf')
+MATE = 100000.0      # bigger than any possible material score
+SEARCH_DEPTH = 3     # half-moves to look ahead; tune later for speed
+
 def evaluate(fen, moves):
     '''Static material score from Red's perspective (+ good for Red).'''
     board = sf.get_fen("xiangqi", fen, moves).split(" ")[0]
@@ -35,6 +39,7 @@ def evaluate(fen, moves):
         score += value if ch.isupper() else -value
     return score
 
+# opening moves by the book
 def choose_opening_move(fen, moves):
     '''If the given position is in the opening book, return the book move.'''
     # Only consider the root position, before any moves.
@@ -42,6 +47,56 @@ def choose_opening_move(fen, moves):
         return OPENING_BOOK.get(fen, None)
     else:
         return None
+    
+
+def side_to_move(position_fen):
+    '''Returns 'w' if Red is to move, 'b' if Black is to move.'''
+    return position_fen.split(" ")[1]
+
+
+def minimax(fen, moves, depth):
+    '''Minimax search. Returns (best_value, best_move) from Red's perspective.
+
+    Red maximizes the evaluation score; Black minimizes it. A side with no
+    legal moves is checkmated (a loss for that side) in xiangqi.
+    '''
+    legal = sf.legal_moves("xiangqi", fen, moves)
+
+    # Terminal: someone has no moves -> they lose.
+    if not legal:
+        return (-MATE if side_to_move(fen) == 'w' else MATE), None
+
+    # Depth limit reached: score the position statically.
+    if depth == 0:
+        return evaluate(fen, moves), None
+
+    red_to_move = side_to_move(fen) == 'w'
+    best_move = None
+
+    if red_to_move:
+        best_value = -INF
+        for move in legal:
+            child_fen = sf.get_fen("xiangqi", fen, moves + [move])
+            value, _ = minimax(child_fen, [], depth - 1)
+            if value > best_value:
+                best_value, best_move = value, move
+    else:
+        best_value = INF
+        for move in legal:
+            child_fen = sf.get_fen("xiangqi", fen, moves + [move])
+            value, _ = minimax(child_fen, [], depth - 1)
+            if value < best_value:
+                best_value, best_move = value, move
+
+    return best_value, best_move
+
+
+def choose_move(fen, moves):
+    '''Picks the bot's move for the current position using minimax.'''
+    value, best = minimax(fen, moves, SEARCH_DEPTH)
+    if best is None:                       # no legal moves
+        return None
+    return best
 
 def make_random_move():
     '''Returns a random legal move'''
@@ -82,7 +137,7 @@ def uci(msg: str):
         if book_move:
             print(f"bestmove {book_move}")
         else:
-            move = make_random_move()
+            move = choose_move(fen, moves)
             print(f"bestmove {move if move else '0000'}")
     elif msg == "quit":
         sys.exit(0)
