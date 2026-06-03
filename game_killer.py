@@ -52,6 +52,18 @@ def side_to_move(position_fen):
     '''Returns 'w' if Red is to move, 'b' if Black is to move.'''
     return position_fen.split(" ")[1]
 
+def order_moves(fen, moves):
+    '''Orders the given moves with captures first.'''
+    legal = sf.legal_moves("xiangqi", fen, moves)
+    captures = []
+    non_captures = []
+    for move in legal:
+        if 'x' in move:
+            captures.append(move)
+        else:
+            non_captures.append(move)
+    return captures + non_captures
+
 
 def minimax_ab(fen, moves, depth, alpha=-INF, beta=INF):
     '''Minimax search with alpha-beta pruning.
@@ -69,9 +81,12 @@ def minimax_ab(fen, moves, depth, alpha=-INF, beta=INF):
     red_to_move = side_to_move(fen) == 'w'
     best_move = None
 
+    # Orders the given moves with captures first, to optimize pruning.
+    ordered_moves = order_moves(fen, legal)
+
     if red_to_move:
         best_value = -INF
-        for move in legal:
+        for move in ordered_moves:
             child_fen = sf.get_fen("xiangqi", fen, moves + [move])
             value, _ = minimax_ab(child_fen, [], depth - 1, alpha, beta)
             if value > best_value:
@@ -81,7 +96,7 @@ def minimax_ab(fen, moves, depth, alpha=-INF, beta=INF):
                 break  # beta cut-off
     else:
         best_value = INF
-        for move in legal:
+        for move in ordered_moves:
             child_fen = sf.get_fen("xiangqi", fen, moves + [move])
             value, _ = minimax_ab(child_fen, [], depth - 1, alpha, beta)
             if value < best_value:
