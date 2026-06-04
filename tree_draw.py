@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-"""Minimax game-tree visualization for Game Killer (extra credit).
+"""Minimax game-tree visualization for Alpha Xiangqi (extra credit).
 
-Invoked via `python game_killer.py draw`. It builds a top-3, depth-4 minimax tree
+Invoked via `python alpha_xiangqi.py draw`. It builds a top-3, depth-4 minimax tree
 from a fixed opening, labels every node with its backpropagated minimax value
 (leaves with their evaluation), marks the edges alpha-beta would prune, and
 renders the tree to an image with the graphviz `dot` binary.
@@ -13,7 +13,7 @@ This module is imported only in draw mode, so it never affects engine runtime.
 import subprocess
 import pyffish as sf
 
-import game_killer as g
+import alpha_xiangqi as g
 
 # Configuration
 OPENING = ["h3e3", "h8e8"]   # known opening; root is Red to move, so plies go R-B-R-B

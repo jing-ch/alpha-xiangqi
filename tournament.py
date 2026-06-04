@@ -177,7 +177,7 @@ def play_round_robin_tournament(bots, games_per_matchup=2, time_limit=1):
 
 if __name__ == "__main__":
     bots = [
-        "./game_killer.py",
+        "./alpha_xiangqi.py",
         "./random_bot.py",
     ]
 

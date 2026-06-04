@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Game Killer — a xiangqi (Chinese chess) engine using minimax search.
+"""Alpha Xiangqi — a xiangqi (Chinese chess) engine using minimax search.
 
 Plays xiangqi over the UCI protocol. Move selection combines a small opening
 book with an iterative-deepening alpha-beta search, scored by a material-based
@@ -229,19 +229,11 @@ def parse_time_limit(msg):
                 pass
     return DEFAULT_MOVETIME
 
-def make_random_move():
-    '''Returns a random legal move'''
-    global fen, moves
-    legal_moves_list = sf.legal_moves("xiangqi", fen, moves)
-    if not legal_moves_list:
-        return None
-    return random.choice(legal_moves_list)
-
 def uci(msg: str):
     '''Returns result of UCCI protocol given passed message'''
     global fen, moves
     if msg == "uci" or msg == "ucci":
-        print("id name Game Killer")
+        print("id name Alpha Xiangqi")
         print("id author Jinghan Chen")
         print("uciok")
     elif msg == "isready":
