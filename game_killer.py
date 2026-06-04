@@ -116,7 +116,9 @@ def minimax_ab(fen, moves, depth, deadline, alpha=-INF, beta=INF):
     red_to_move = side_to_move(fen) == 'w'
     best_move = None
 
-    # Orders the given moves with captures first, to optimize pruning.
+    # Shuffle first so equal-scored moves break ties randomly (prevents the
+    # repetitive back-and-forth shuffling), then order captures first for pruning.
+    random.shuffle(legal)
     ordered_moves = order_moves(fen, moves, legal)
 
     if red_to_move:
