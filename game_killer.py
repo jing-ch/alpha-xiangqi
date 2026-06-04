@@ -43,6 +43,14 @@ TIME_SAFETY = 0.9        # use 90% of the budget; leave a buffer for I/O
 SOFT_FRACTION = 0.5      # don't start a new depth past this share of the budget
 MAX_DEPTH = 64           # hard cap on the iterative-deepening loop
 
+# Time management: iterative deepening with a hard deadline.
+# Search depth 1, 2, 3, ... keeping the best move from the last depth that
+# fully completes. minimax_ab aborts (SearchTimeout) once time.time() passes
+# the deadline = start + 0.9*budget; the unfinished depth is discarded and the
+# previous depth's move is used. A soft stop skips starting a new depth past
+# 0.5*budget. Guarantees: never forfeits, always returns a legal move, and
+# searches as deep as the position and the clock allow.
+
 
 class SearchTimeout(Exception):
     '''Raised inside the search when the per-move deadline is exceeded.'''
