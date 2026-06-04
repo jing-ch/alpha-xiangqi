@@ -84,12 +84,39 @@ def side_to_move(position_fen):
     '''Returns 'w' if Red is to move, 'b' if Black is to move.'''
     return position_fen.split(" ")[1]
 
-def order_moves(fen, moves, legal):
-    '''Orders the given legal moves with captures first (better alpha-beta cutoffs).'''
+def occupied_squares(board):
+    '''Set of occupied squares (e.g. 'h3', 'b10') read from a FEN board field.'''
+    occupied = set()
+    for row_index, row in enumerate(board.split('/')):
+        rank = 10 - row_index          # FEN lists rank 10 first, rank 1 last
+        col = 0
+        for ch in row:
+            if ch.isdigit():
+                col += int(ch)         # run of empty squares
+            else:
+                occupied.add(f"{chr(ord('a') + col)}{rank}")
+                col += 1
+    return occupied
+
+def move_destination(move):
+    '''Destination square of a UCI move, e.g. 'h3e3' -> 'e3', 'b3b10' -> 'b10'.'''
+    i = 1
+    while move[i].isdigit():           # skip the source rank (1 or 2 digits)
+        i += 1
+    return move[i:]                    # remaining chars are the dest file + rank
+
+def order_moves(fen, legal):
+    '''Orders the given legal moves with captures first (better alpha-beta cutoffs).
+
+    A move is a capture iff its destination square is occupied -- legal moves
+    never land on a friendly piece -- so we read occupancy straight off the FEN
+    instead of calling sf.is_capture once per move.
+    '''
+    occupied = occupied_squares(fen.split(" ")[0])
     captures = []
     non_captures = []
     for move in legal:
-        if sf.is_capture("xiangqi", fen, moves, move):
+        if move_destination(move) in occupied:
             captures.append(move)
         else:
             non_captures.append(move)
@@ -122,7 +149,7 @@ def minimax_ab(fen, moves, depth, deadline, alpha=-INF, beta=INF):
     # Shuffle first so equal-scored moves break ties randomly (prevents the
     # repetitive back-and-forth shuffling), then order captures first for pruning.
     random.shuffle(legal)
-    ordered_moves = order_moves(fen, moves, legal)
+    ordered_moves = order_moves(fen, legal)
 
     if red_to_move:
         best_value = -INF
