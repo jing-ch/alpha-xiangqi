@@ -42,7 +42,7 @@ DEFAULT_MOVETIME = 1.0   # seconds, used when a 'go' command omits movetime
 TIME_SAFETY = 0.9        # use 90% of the budget; leave a buffer for I/O
 SOFT_FRACTION = 0.5      # don't start a new depth past this share of the budget
 MAX_DEPTH = 64           # hard cap on the iterative-deepening loop
-TOP_N_MOVES = 12         # search only the best N moves per node, to go deeper
+TOP_N_MOVES = 10         # search only the best N moves per node, to go deeper
 
 # Time management: iterative deepening with a hard deadline.
 # Search depth 1, 2, 3, ... keeping the best move from the last depth that
@@ -284,4 +284,8 @@ def main():
         print(f"Fatal Error: {e}", file=sys.stderr)
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "draw":
+        import tree_draw          # imported only in draw mode; no effect on engine runtime
+        tree_draw.draw_tree()
+    else:
+        main()
