@@ -84,9 +84,9 @@ def side_to_move(position_fen):
     '''Returns 'w' if Red is to move, 'b' if Black is to move.'''
     return position_fen.split(" ")[1]
 
-def occupied_squares(board):
-    '''Set of occupied squares (e.g. 'h3', 'b10') read from a FEN board field.'''
-    occupied = set()
+def board_pieces(board):
+    '''Map occupied squares to their piece, e.g. {'b10': 'r', 'h3': 'C'}.'''
+    pieces = {}
     for row_index, row in enumerate(board.split('/')):
         rank = 10 - row_index          # FEN lists rank 10 first, rank 1 last
         col = 0
@@ -94,35 +94,43 @@ def occupied_squares(board):
             if ch.isdigit():
                 col += int(ch)         # run of empty squares
             else:
-                occupied.add(f"{chr(ord('a') + col)}{rank}")
+                pieces[f"{chr(ord('a') + col)}{rank}"] = ch
                 col += 1
-    return occupied
+    return pieces
 
-def move_destination(move):
-    '''Destination square of a UCI move, e.g. 'h3e3' -> 'e3', 'b3b10' -> 'b10'.'''
+def split_move(move):
+    '''Split a UCI move into (source, destination), e.g. 'b3b10' -> ('b3', 'b10').'''
     i = 1
     while move[i].isdigit():           # skip the source rank (1 or 2 digits)
         i += 1
-    return move[i:]                    # remaining chars are the dest file + rank
+    return move[:i], move[i:]
 
 def order_moves(fen, legal):
-    '''Orders the given legal moves with captures first (better alpha-beta cutoffs).
+    '''Orders legal moves so the most promising are searched first, then keeps the
+    top N to bound the branching factor. All scoring comes from one board parse --
+    no pyffish calls.
 
-    A move is a capture iff its destination square is occupied -- legal moves
-    never land on a friendly piece -- so we read occupancy straight off the FEN
-    instead of calling sf.is_capture once per move.
+    Higher score = searched earlier:
+      * captures rank above quiet moves, biggest victim first / cheapest attacker
+        (MVV-LVA) -- this is what drives the alpha-beta cutoffs;
+      * quiet moves are ranked by how far they advance toward the enemy.
+    The sort is stable, so after the caller's shuffle, equal-scored moves keep a
+    random order (preserving the anti-shuffle tie-break).
     '''
-    occupied = occupied_squares(fen.split(" ")[0])
-    captures = []
-    non_captures = []
-    for move in legal:
-        if move_destination(move) in occupied:
-            captures.append(move)
-        else:
-            non_captures.append(move)
-    # Keep only the top N to shrink the branching factor (captures are kept
-    # first; the quiet moves that survive are random thanks to the shuffle).
-    return (captures + non_captures)[:TOP_N_MOVES]
+    pieces = board_pieces(fen.split(" ")[0])
+
+    def score(move):
+        src, dst = split_move(move)
+        victim = pieces.get(dst)
+        if victim is not None:         # capture: MVV-LVA, always above quiet moves
+            attacker = pieces.get(src, '')
+            return (1000 + 10 * PIECE_VALUES.get(victim.lower(), 0)
+                         - PIECE_VALUES.get(attacker.lower(), 0))
+        mover = pieces.get(src, '')    # quiet move: prefer advancing toward the enemy
+        forward = int(dst[1:]) - int(src[1:])
+        return forward if mover.isupper() else -forward
+
+    return sorted(legal, key=score, reverse=True)[:TOP_N_MOVES]
 
 
 def minimax_ab(fen, moves, depth, deadline, alpha=-INF, beta=INF):
