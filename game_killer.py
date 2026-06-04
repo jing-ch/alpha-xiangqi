@@ -30,13 +30,6 @@ PIECE_VALUES = {
     'p': 1.0,    # soldier (pawn)
 }
 
-# Attacking pieces earn a small bonus for advancing toward the enemy, giving the
-# search a gradient to convert a material lead instead of shuffling in place.
-# Kept well below a soldier so material always dominates. King/advisor/elephant
-# are excluded: they are defensive and palace/river-bound.
-ADVANCE_PIECES = ('r', 'c', 'n', 'p')
-ADVANCE_WEIGHT = 0.05    # bonus per rank advanced (max ~0.45, < half a soldier)
-
 OPENING_BOOK = {
     # FEN: best move
     "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w": "h2e2",
@@ -49,6 +42,7 @@ DEFAULT_MOVETIME = 1.0   # seconds, used when a 'go' command omits movetime
 TIME_SAFETY = 0.9        # use 90% of the budget; leave a buffer for I/O
 SOFT_FRACTION = 0.5      # don't start a new depth past this share of the budget
 MAX_DEPTH = 64           # hard cap on the iterative-deepening loop
+TOP_N_MOVES = 12         # search only the best N moves per node, to go deeper
 
 # Time management: iterative deepening with a hard deadline.
 # Search depth 1, 2, 3, ... keeping the best move from the last depth that
@@ -64,28 +58,17 @@ class SearchTimeout(Exception):
     pass
 
 def evaluate(fen, moves):
-    '''Static score from Red's perspective (+ good for Red): material plus a
-    small advancement bonus for attacking pieces.'''
+    '''Static material score from Red's perspective (+ good for Red).'''
     # `fen` is already a full FEN; only rebuild it if there are pending moves.
     if moves:
         fen = sf.get_fen("xiangqi", fen, moves)
     board = fen.split(" ")[0]
     score = 0.0
-    # rows[0] = Black's back rank (top); rows[9] = Red's back rank (bottom).
-    for r, row in enumerate(board.split('/')):
-        for ch in row:
-            piece = ch.lower()
-            value = PIECE_VALUES.get(piece)
-            if value is None:
-                continue  # digits (empty squares) or the general
-            if ch.isupper():                       # Red: advances up (row -> 0)
-                score += value
-                if piece in ADVANCE_PIECES:
-                    score += ADVANCE_WEIGHT * (9 - r)
-            else:                                  # Black: advances down (row -> 9)
-                score -= value
-                if piece in ADVANCE_PIECES:
-                    score -= ADVANCE_WEIGHT * r
+    for ch in board:
+        value = PIECE_VALUES.get(ch.lower())
+        if value is None:
+            continue  # digits, '/', or the general
+        score += value if ch.isupper() else -value
     return score
 
 def choose_opening_move(fen, moves):
@@ -110,7 +93,9 @@ def order_moves(fen, moves, legal):
             captures.append(move)
         else:
             non_captures.append(move)
-    return captures + non_captures
+    # Keep only the top N to shrink the branching factor (captures are kept
+    # first; the quiet moves that survive are random thanks to the shuffle).
+    return (captures + non_captures)[:TOP_N_MOVES]
 
 
 def minimax_ab(fen, moves, depth, deadline, alpha=-INF, beta=INF):
