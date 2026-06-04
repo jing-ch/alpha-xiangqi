@@ -159,10 +159,15 @@ def choose_move(fen, moves, time_limit):
     deadline = start + TIME_SAFETY * time_limit
     soft_limit = start + SOFT_FRACTION * time_limit
 
+    # Collapse the game history into a single FEN once, so the search never
+    # replays all prior moves on every pyffish call (it works from an empty
+    # history below). This matters more the longer the game runs.
+    cur = sf.get_fen("xiangqi", fen, moves)
+
     best = None
     for depth in range(1, MAX_DEPTH + 1):
         try:
-            _, move = minimax_ab(fen, moves, depth, deadline)
+            _, move = minimax_ab(cur, [], depth, deadline)
         except SearchTimeout:
             break                          # discard this unfinished depth
         if move is None:                   # terminal position, no legal moves
@@ -172,7 +177,7 @@ def choose_move(fen, moves, time_limit):
             break
 
     if best is None:                       # timed out before finishing depth 1
-        legal = sf.legal_moves("xiangqi", fen, moves)
+        legal = sf.legal_moves("xiangqi", cur, [])
         return legal[0] if legal else None
     return best
 
